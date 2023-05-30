@@ -1,0 +1,98 @@
+python manage.py shell
+
+from django.contrib.auth.models import User
+from news.models import Author, Category, Post, PostCategory, Comment
+
+ Создать пользователей:
+User.objects.create(username='Ivan')
+User.objects.create(username='Roman')
+
+ Создать объекты модели Author, связанные с пользователями:
+user=User.objects.get(username='Ivan')
+Author.objects.create(name=user)
+user=User.objects.get(username='Roman')
+Author.objects.create(name=user)
+
+ Добавить категории в модель Category:
+Category.objects.create(name='Спорт')
+Category.objects.create(name='Экономика')
+Category.objects.create(name='Наука')
+Category.objects.create(name='IT')
+
+ Добавить 1 новость и 2 статьи:
+Post.objects.create(author=Author.objects.get(name=User.objects.get(username='Ivan')), type=Post.news, title='Новость 1', text='Текст для Новость 1')
+Post.objects.create(author=Author.objects.get(name=User.objects.get(username='Roman')), type=Post.article, title='Статья 1', text='Текст для Статья 1')
+Post.objects.create(author=Author.objects.get(name=User.objects.get(username='Roman')), type=Post.article, title='Статья 2', text='Текст для Статья 2')
+
+ Присвоить новости и статьям категории:
+post_1=Post.objects.get(title='Новость 1')
+post_2=Post.objects.get(title='Статья 1')
+post_3=Post.objects.get(title='Статья 2')
+post_1.category.add(Category.objects.get(name='Спорт'))
+post_2.category.add(Category.objects.get(name='Экономика'), Category.objects.get(name='Наука'))
+post_3.category.add(Category.objects.get(name='Наука'))
+
+ Добавить комментарии:
+Comment.objects.create(user=User.objects.get(username='Ivan'), post=Post.objects.get(title='Новость 1'), text='Коммент 1 к Новость 1')
+Comment.objects.create(user=User.objects.get(username='Ivan'), post=Post.objects.get(title='Новость 1'), text='Коммент 2 к Новость 1')
+Comment.objects.create(user=User.objects.get(username='Roman'), post=Post.objects.get(title='Новость 1'), text='Коммент 3 к Новость 1')
+Comment.objects.create(user=User.objects.get(username='Roman'), post=Post.objects.get(title='Статья 1'), text='Коммент 1 к Статья 1')
+Comment.objects.create(user=User.objects.get(username='Roman'), post=Post.objects.get(title='Статья 1'), text='Коммент 2 к Статья 1')
+Comment.objects.create(user=User.objects.get(username='Roman'), post=Post.objects.get(title='Статья 2'), text='Коммент 1 к Статья 2')
+
+ Добавить like и dislike к новости, статьям и комментариям:
+Post.objects.get(title='Новость 1').like()
+Post.objects.get(title='Новость 1').like()
+Post.objects.get(title='Новость 1').like()
+Post.objects.get(title='Новость 1').like()
+Post.objects.get(title='Новость 1').like()
+Post.objects.get(title='Новость 1').dislike()
+
+Post.objects.get(title='Статья 1').like()
+Post.objects.get(title='Статья 1').like()
+Post.objects.get(title='Статья 1').like()
+Post.objects.get(title='Статья 1').like()
+Post.objects.get(title='Статья 1').dislike()
+Post.objects.get(title='Статья 1').dislike()
+
+Post.objects.get(title='Статья 2').like()
+Post.objects.get(title='Статья 2').like()
+Post.objects.get(title='Статья 2').like()
+Post.objects.get(title='Статья 2').like()
+Post.objects.get(title='Статья 2').like()
+Post.objects.get(title='Статья 2').dislike()
+Post.objects.get(title='Статья 2').dislike()
+Post.objects.get(title='Статья 2').dislike()
+
+Comment.objects.get(id=1).like()
+Comment.objects.get(id=2).like()
+Comment.objects.get(id=3).like()
+Comment.objects.get(id=4).dislike()
+Comment.objects.get(id=5).like()
+Comment.objects.get(id=5).like()
+
+ Расчет рейтинга:
+Author.objects.get(name__username='Ivan').update_rating()
+Author.objects.get(name__username='Roman').update_rating()
+Просмотр рейтинга:
+Author.objects.get(name__username='Ivan').rating
+Author.objects.get(name__username='Roman').rating
+
+ Рейтинг топ автора:
+top=Author.objects.order_by('-rating').values('name', 'rating')[0]
+top['name']=Author.objects.order_by('-rating')[0].name.username
+print(top)
+
+ Просмотр топ статьи (дата добавления, имя автора, рейтинг, заголовок и превью):
+top_post=Post.objects.order_by('-rating').values('date_create', 'author', 'rating', 'title')[0]
+top_post['date_create']=top_post['date_create'].strftime("%d.%m.%Y %H:%M")
+top_post['author']=Post.objects.order_by('-rating')[0].author
+top_post['preview']=Post.objects.order_by('-rating')[0].preview()
+print(top_post)
+
+ Просмотр всех комментариев к топ статье (дата, пользователь, рейтинг, текст):
+comments=Comment.objects.filter(post=Post.objects.order_by('-rating')[0]).values('date_create', 'user', 'rating', 'text')
+for comment in comments:
+    comment['date_create'] = comment['date_create'].strftime("%d.%m.%Y %H:%M")
+    comment['user'] = User.objects.get(id=comment['user'])
+print(comments)
